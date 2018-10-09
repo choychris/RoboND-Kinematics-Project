@@ -28,20 +28,61 @@ def handle_calculate_IK(req):
 
         ### Your FK code here
         # Create symbols
-	#
-	#
-	# Create Modified DH parameters
-	#
-	#
-	# Define Modified DH Transformation matrix
-	#
-	#
-	# Create individual transformation matrices
-	#
-	#
-	# Extract rotation matrices from the transformation matrices
-	#
-	#
+        dtr = pi/180
+        q1, q2, q3, q4, q5, q6, q7 = symbols('q1:8')
+        d1, d2, d3, d4, d5, d6, d7 = symbols('d1:8')
+        a0, a1, a2, a3, a4, a5, a6 = symbols('a0:7')
+        alpha0, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6 = symbols('alpha0:7')
+	    # Create Modified DH parameters
+        s = {alpha0: 0,       a0: 0,      d1: 0.33+0.42,  q1: q1,
+             alpha1: -90*dtr, a1: 0.35,   d2: 0,          q2: q2-90*dtr,
+             alpha2: 0,       a2: 1.25,   d3: 0,          q3: q3,
+             alpha3: -90*dtr, a3: -0.054, d4: 0.96+0.54,  q4: q4,
+             alpha4: 90*dtr,  a4: 0,      d5: 0,          q5: q5,
+             alpha5: -90*dtr, a5: 0,      d6: 0,          q6: q6,
+             alpha6: 0,       a6: 0,      d7: 0.193+0.11, q7: 0}
+        # Define Modified DH Transformation matrix
+        def transMat(q, d, a, alpha):
+            transform = Matrix([
+                [cos(q), -sin(q), 0, a],
+                [sin(q)*cos(alpha), cos(q)*cos(alpha), -sin(alpha), -sin(alpha)*d],
+                [sin(q)*sin(alpha), cos(q)*sin(alpha), cos(alpha), cos(alpha)*d],
+                [0, 0, 0, 1]])
+            return transform.subs(s)
+        T0_1 = transMat(q1, d1, a0, alpha0)
+        T0_2 = simplify(T0_1 * transMat(q2, d2, a1, alpha1))
+        T0_3 = simplify(T0_2 * transMat(q3, d3, a2, alpha2))
+        T0_4 = simplify(T0_3 * transMat(q4, d4, a3, alpha3))
+        T0_5 = simplify(T0_4 * transMat(q5, d5, a4, alpha4))
+        T0_6 = simplify(T0_5 * transMat(q6, d6, a5, alpha5))
+        T0_EE = simplify(T0_6 * transMat(q7, d7, a6, alpha6))
+    
+	    # Create individual transformation matrices
+        def Rot_z(z):
+            r = Matrix([[cos(z), -sin(z), 0, 0],
+                        [sin(z),  cos(z), 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 1]])
+            return r
+        def Rot_y(y):
+            r = Matrix([[cos(y), 0,  sin(y), 0],
+                        [0, 1, 0, 0],
+                        [-sin(y), 0, cos(y), 0],
+                        [0, 0, 0, 1]])
+            return r
+        def Rot_x(x):
+            r = Matrix([[1, 0, 0, 0],
+                        [0, cos(x), -sin(x), 0],
+                        [0, sin(x),  cos(x), 0],
+                        [0, 0, 0, 1]])
+            return r
+        R_y = Rot_y(-90*dtr)
+        R_z = Rot_z(180*dtr)
+        R_corr = simplify(R_z * R_y)
+        T_final = simplify(T0_EE * R_corr)
+        # Extract rotation matrices from the transformation matrices
+        # R_final = T_final.row_del(3).col_del(3)
+	
         ###
 
         # Initialize service response
@@ -62,12 +103,57 @@ def handle_calculate_IK(req):
                     req.poses[x].orientation.z, req.poses[x].orientation.w])
 
             ### Your IK code here
-	    # Compensate for rotation discrepancy between DH parameters and Gazebo
-	    #
-	    #
-	    # Calculate joint angles using Geometric IK method
-	    #
-	    #
+            # Create individual transformation matrices
+            R_y = Rot_y(-90*dtr)
+            R_z = Rot_z(180*dtr)
+            R_corr = simplify(R_z * R_y)
+            # Compensate for rotation discrepancy between DH parameters and Gazebo
+            # we need to inverse R_crr here since Rgazebo_EE = DH0_EE * R_corr
+            # Rgazebo_EE * R_corr.inv() = DH0_EE * R_corr * R_corr.inv()
+            # DH0_EE = Rgazebo_EE * R_corr.inv()
+            Rrpy = simplify(Rot_z(yaw) * Rot_y(pitch) * Rot_x(roll) * R_corr.inv('LU'))
+            nx = Rrpy[0, 2]
+            ny = Rrpy[1, 2]
+            nz = Rrpy[2, 2]
+            wx = px - 0.303 * nx
+            wy = py - 0.303 * ny
+            wz = pz - 0.303 * nz
+
+            # Calculate joint angles using Geometric IK method
+            theta1 = atan2(wy, wx)
+            d4 = 0.96+0.54
+            a3 = 0.054
+            a2 = 1.25
+            length_a = sqrt(a3**2 + d4**2)
+            length_b = sqrt(wx**2 + wy**2 + (wz - 0.75)**2) # this is where I did wrong
+            length_c = a2
+            # Cosine Laws formula:
+            # length_a**2 = length_b**2 + length_c**2 - 2*length_b*length_c*cos(angle_a)
+            # inverse to find angle_a
+            angle_a = acos((length_b**2+length_c**2-length_a**2)/(2*length_b*length_c))
+            angle_b = acos((length_a**2+length_c**2-length_b**2)/(2*length_a*length_c))
+            theta2 = pi/2 - angle_a - atan2((wz-0.75), sqrt(wx**2+wy**2))
+            theta3 = pi/2 - angle_b - atan2(a3, d4)
+
+            # Calculate R4_6 
+            # R0_3 = T0_3.evalf(subs={q1: theta1, q2: theta2, q3: theta3})
+            # R0_3 = R0_3.col_del(3).row_del(3)
+            # R0_3 = R0_3.col_insert(3, Matrix([0, 0, 0]))
+            # R0_3 = R0_3.row_insert(3, Matrix([[0, 0, 0, 1]]))
+            R0_1 = Rot_x(theta1)
+            R1_2 = Rot_y(theta2)
+            R2_3 = Rot_y(theta3)
+            R0_3 = simplify(R0_1*R1_2*R2_3)
+            R3_6 = simplify(R0_3.inv('LU') * Rrpy)
+            #print (R4_6)
+            r31 = R3_6[2, 0]
+            r32 = R3_6[2, 1]
+            r33 = R3_6[2, 2]
+            r11 = R3_6[0, 0]
+            r21 = R3_6[1, 0]
+            theta4 = atan2(r32, r33) #R3_4 #roll #Rx
+            theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
+            theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
             ###
 
             # Populate response for the IK request
