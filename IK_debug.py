@@ -173,15 +173,19 @@ def test_code(test_case):
     R0_3 = T0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})[0:3, 0:3]
     R0_3 = R0_3.row_join(Matrix([[0], [0], [0]])).col_join(Matrix([[0, 0, 0, 1]]))
     R3_6 = simplify(R0_3.inv('LU') * Rrpy)
+    print (R3_6)
     #print (R4_6)
-    r31 = R3_6[2, 0]
-    r32 = R3_6[2, 1]
-    r33 = R3_6[2, 2]
-    r11 = R3_6[0, 0]
-    r21 = R3_6[1, 0]
-    theta4 = atan2(r32, r33) #R3_4 #roll #Rx
-    theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
-    theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
+    # r31 = R3_6[2, 0]
+    # r32 = R3_6[2, 1]
+    # r33 = R3_6[2, 2]
+    # r11 = R3_6[0, 0]
+    # r21 = R3_6[1, 0]
+    # theta4 = atan2(r32, r33) #R3_4 #roll #Rx
+    # theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
+    # theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
+    theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+    theta5 = atan2(sqrt(R3_6[0,2]**2+R3_6[2,2]**2), R3_6[1,2])
+    theta6 = atan2(-R3_6[1,1], R3_6[1,0])
     ###
 
     ## 
@@ -261,6 +265,6 @@ def test_code(test_case):
 
 if __name__ == "__main__":
     # Change test case number for different scenarios
-    test_case_number = 1
+    test_case_number = 2
 
     test_code(test_cases[test_case_number])
