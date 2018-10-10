@@ -131,17 +131,17 @@ def test_code(test_case):
     T0_EE = simplify(T0_6 * transMat(q7, d7, a6, alpha6))
     # Compensate for rotation discrepancy between DH parameters and Gazebo
     # we need to inverse R_crr here since Rgazebo_EE = DH0_EE * R_corr
-    # Rgazebo_EE * R_corr.inv() = DH0_EE * R_corr * R_corr.inv()
-    # DH0_EE = Rgazebo_EE * R_corr.inv()
-    Rrpy = simplify(Rot_z(yaw) * Rot_y(pitch) * Rot_x(roll) * R_corr)
-    nx = Rrpy[0, 2]
-    ny = Rrpy[1, 2]
-    nz = Rrpy[2, 2]
+    # Rrpy(orientation from gazebo) = T0_EE * R_corr
+    # T0_EE = Rrpy * R_corr.inv()
+    R0_6 = simplify(Rot_z(yaw) * Rot_y(pitch) * Rot_x(roll) * R_corr.inv("LU"))
+    nx = R0_6[0, 2]
+    ny = R0_6[1, 2]
+    nz = R0_6[2, 2]
     wx = px - 0.303 * nx
     wy = py - 0.303 * ny
     wz = pz - 0.303 * nz
 
-    # Calculate joint angles using Geometric IK method
+    # Calculate joint angles using Geometry method
     theta1 = atan2(wy, wx)
     d4 = 0.96+0.54
     d1 = 0.75
@@ -172,20 +172,18 @@ def test_code(test_case):
      
     R0_3 = T0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})[0:3, 0:3]
     R0_3 = R0_3.row_join(Matrix([[0], [0], [0]])).col_join(Matrix([[0, 0, 0, 1]]))
-    R3_6 = simplify(R0_3.inv('LU') * Rrpy)
-    print (R3_6)
-    #print (R4_6)
-    # r31 = R3_6[2, 0]
-    # r32 = R3_6[2, 1]
-    # r33 = R3_6[2, 2]
-    # r11 = R3_6[0, 0]
-    # r21 = R3_6[1, 0]
-    # theta4 = atan2(r32, r33) #R3_4 #roll #Rx
-    # theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
-    # theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
-    theta4 = atan2(R3_6[2,2], -R3_6[0,2])
-    theta5 = atan2(sqrt(R3_6[0,2]**2+R3_6[2,2]**2), R3_6[1,2])
-    theta6 = atan2(-R3_6[1,1], R3_6[1,0])
+    R3_6 = simplify(R0_3.inv('LU') * R0_6)
+    r31 = R3_6[2, 0]
+    r32 = R3_6[2, 1]
+    r33 = R3_6[2, 2]
+    r11 = R3_6[0, 0]
+    r21 = R3_6[1, 0]
+    theta4 = atan2(r32, r33) #R3_4 #roll #Rx
+    theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
+    theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
+    # theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+    # theta5 = atan2(sqrt(R3_6[0,2]**2+R3_6[2,2]**2), R3_6[1,2])
+    # theta6 = atan2(-R3_6[1,1], R3_6[1,0])
     ###
 
     ## 
