@@ -1,7 +1,7 @@
 ## Project: Kinematics Pick & Place
 ### This repositery is forked from [Udacity Official RoboND-Kinematics-Project](https://github.com/udacity/RoboND-Kinematics-Project).
 #### I have completed the [IK_server.py](./kuka_arm/scripts/IK_server.py) and [IK_debug.py](./IK_debug.py).
-#### This document contains the desciption of works that I have done to complete KUKA210 Pick and Place Project. For environment setup, please go to [this udacity document](./Project_Intro.md)
+#### This document contains the desciption of works that I have done to complete KUKA210 Pick and Place Project. For environment setup, please go to [this udacity document].(./Project_Intro.md)
 ---
 
 
@@ -50,7 +50,7 @@ test_cases = {4:[[[1.99, 1.1324, 1.0011],
 
 #### 2. Using the DH parameter table you derived earlier, create individual transformation matrices about each joint. In addition, also generate a generalized homogeneous transform between base_link and gripper_link using only end-effector(gripper) pose.
 
-**The followings graph indicates each DH paramter that is not zero:**
+**The following graph indicates each DH paramter that is not zero:**
 
 ![alt text][DHAnalysis]
 
