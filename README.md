@@ -1,7 +1,7 @@
 ## Project: Kinematics Pick & Place
 ### This repositery is forked from [Udacity Official RoboND-Kinematics-Project](https://github.com/udacity/RoboND-Kinematics-Project).
 #### I have completed the [IK_server.py](./kuka_arm/scripts/IK_server.py) and [IK_debug.py](./IK_debug.py).
-#### This document contains the desciption of works that I have done to complete KUKA210 Pick and Place Project. For environment setup into please go to [this udacity document](./Project_Intro.md)
+#### This document contains the desciption of works that I have done to complete KUKA210 Pick and Place Project. For environment setup, please go to [this udacity document](./Project_Intro.md)
 ---
 
 
