@@ -54,7 +54,7 @@ test_cases = {4:[[[1.99, 1.1324, 1.0011],
 
 ![alt text][DHAnalysis]
 
-Here is the DB Table filled with joint information from [kr210.urdf.xacro].(./kuka_arm/urdf/kr210.urdf.xacro)
+Here is the DB Table filled with joint information from [kr210.urdf.xacro](./kuka_arm/urdf/kr210.urdf.xacro).
 Please be noted that since all 6 joints in KR210 is revolute joint, paramter d(i) is fixed according to .urdf file.
 
 Links | alpha(i-1) | a(i-1) | d(i) | theta(i)
