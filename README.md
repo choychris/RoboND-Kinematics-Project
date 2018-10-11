@@ -23,7 +23,7 @@
 [image4]: ./project_images/kuka_arm.png
 [DHAnalysis]: ./project_images/KR210_FK.png
 [theta1]: ./project_images/theta1.png
-[theta2&3]: ./project_images/theta2&3.png
+[theta2_3]: ./project_images/theta2_3.png
 
 ---
 ### Writeup / README
@@ -35,7 +35,7 @@ This is it :)
 ### Kinematic Analysis
 #### 1. Run the forward_kinematics demo and evaluate the kr210.urdf.xacro file to perform kinematic analysis of Kuka KR210 robot and derive its DH parameters.
 
-Running the forward_kinematics demo and turning the joint angles in joint_state_pulisher to examine the links postion, **especially gripper link aka end effector and link_5 aka wist center**, and kuka arm pose.
+Running the forward_kinematics demo and turning the joint angles in joint_state_pulisher to examine the links postion, especially `gripper_link` (end effector) and `link_5` (wist center), and pose of KR210.
 
 I add this position to be the extra testing case for IK_debug.py:
 
@@ -54,8 +54,7 @@ test_cases = {4:[[[1.99, 1.1324, 1.0011],
 
 ![alt text][DHAnalysis]
 
-**Here is the DB Table filled with joint information from [kr210.urdf.xacro](./kuka_arm/urdf/kr210.urdf.xacro)**
-
+Here is the DB Table filled with joint information from [kr210.urdf.xacro].(./kuka_arm/urdf/kr210.urdf.xacro)
 Please be noted that since all 6 joints in KR210 is revolute joint, paramter d(i) is fixed according to .urdf file.
 
 Links | alpha(i-1) | a(i-1) | d(i) | theta(i)
@@ -68,7 +67,7 @@ Links | alpha(i-1) | a(i-1) | d(i) | theta(i)
 5->6 | - pi/2 | 0 | 0 | q6
 6->EE | 0 | 0 | 0.303 | 0
 
-For example, a1 is _0.35_, which represents the joint distance between joint_1 and joint_2,measuring in x1.
+For example, a1 is _0.35_, which represents the joint distance between joint_1 and joint_2, measuring in x1.
 
 ```
   <joint name="joint_2" type="revolute">
@@ -104,7 +103,7 @@ So, total tranformation from `base_link` to `gripper_link` is `T0_1 * T1_2 * T2_
 
 The following steps show how I find out theta1, theta2 and theta3:
 
-1. calculate WC(wist center) position:
+**1. Calculate WC(wrist center) position:**
 ```
 # get actual rotation matrix from simulator orientation
 R0_6 = simplify(Rot_z(yaw) * Rot_y(pitch) * Rot_x(roll) * R_corr.inv("LU))
@@ -112,19 +111,19 @@ nx = R0_6[0, 2]
 ny = R0_6[1, 2]
 nz = R0_6[2, 2]
 
-# calcute WC(wist center) position from rotation matrix
+# calcute WC(wrist center) position from rotation matrix
 wx = px - 0.303 * nx
 wy = py - 0.303 * ny
 wz = pz - 0.303 * nz
 ```
 
-2. Calculate orientation, theta1, theta2 and theta3:
+**2. Calculate orientation, theta1, theta2 and theta3:**
 
-**The following graphs show geometry variables:**
+  The following graphs show geometry variables:
 
 ![alt text][theta1]
 
-![alt text][theta2&3]
+![alt text][theta2_3]
 
 Code implementation to calculate theta1, theta2 and theta3:
 
