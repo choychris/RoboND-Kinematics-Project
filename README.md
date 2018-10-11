@@ -135,11 +135,12 @@ a3 = 0.054
 a2 = 1.25
 a1 = 0.35
 
-#line projected from straight distance b/w O2 & WC to plane x y 
+# here we need to subtract the length of a1 and d1 to obtain the actual length starting from O2
+# line projected from straight distance b/w O2 & WC to plane x y 
 diagonal_xy = sqrt(wx**2 + wy**2) - a1 
+ 
+length_b = sqrt(diagonal**2 + (wz-d1)**2)
 length_a = sqrt(a3**2 + d4**2)
-# here we need to subtract the length of a1 and d1 to obtain the actual length starting from O2 
-length_b = sqrt(diagonal**2 + (wz-d1)**2) # this is where I did wrong
 length_c = a2
 
 # Cosine Laws formula:
@@ -155,11 +156,11 @@ theta2 = pi/2 - angle_a - atan2((wz-d1), diagonal_xy)
 theta3 = pi/2 - angle_b - atan2(a3, d4)
 ```
 
-3. Lastly, use Euler angle composition to find out `R3_6` to calculate theta4, theta5 and theta6:
+**3. Lastly, use Euler angle composition to find out `R3_6` to calculate theta4, theta5 and theta6:**
 
-* From DH transfromation, since `R0_6 = R0_1 * R1_2 * R2_3 * R3_4 * R4_5 * R5_6`, we can decompose `R3_6` as ` R3_4 * R4_5 * R5_6`. 
+* From Homogeneous transfromation, since `R0_6 = R0_1 * R1_2 * R2_3 * R3_4 * R4_5 * R5_6`, we can decompose `R3_6` as ` R3_4 * R4_5 * R5_6`. 
 
-* Also, I reuse the tranform `T0_3` to get the rotation matrix `R0_3`, then further use inverse of `R0_3` to calculate `R3_6`. 
+* Also, I reuse the tranformation `T0_3` to get the rotation matrix `R0_3`, then further use inverse of `R0_3` to calculate `R3_6`. 
 
 ```
 R0_3 = T0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})[0:3, 0:3]
@@ -167,7 +168,7 @@ R0_3 = R0_3.row_join(Matrix([[0], [0], [0]])).col_join(Matrix([[0, 0, 0, 1]]))
 R3_6 = simplify(R0_3.inv('LU') * Rrpy)
 ```
 
-So, here is the `R3_6` rotation matrix we can get:
+  So, here is the `R3_6` rotation matrix we can get:
 
 ```
 Matrix([
@@ -176,9 +177,10 @@ Matrix([
 [-sin(q4)*cos(q5)*cos(q6) - sin(q6)*cos(q4),  sin(q4)*sin(q6)*cos(q5) - cos(q4)*cos(q6),  sin(q4)*sin(q5)]])
 ```
 
-The following math notation shows how to get each atan2 formula.
+  The following math notation shows how to get each atan2 formula.
 
 ![alt text][image3]
+
 
 Code implementation of each atan2 formula:
 ```
@@ -200,7 +202,7 @@ By implementing Pick and place in Gazebo simulator, with IK_server.py up to calc
 
 ![alt text][image4]
 
-- In the **forward kinematics** part, I get the final transform from base_link to end effector by combine each joint transform using DH Table. 
+- In the **forward kinematics** part, I get the total tranformation from `base_link` to `gripper_link` by combining each joint transformation using DH Table. 
 This is great that it DH table reduces the number of variables needed to be substited because by chosing the right origin in each joint, many paramters are 0
 ```
 # Define Modified DH Transformation matrix
@@ -212,13 +214,13 @@ def transMat(q, d, a, alpha):
         [0, 0, 0, 1]])
     return transform.subs(s)
 
-# Homogeneous transform from base_link to end effector
+# Homogeneous transform from base_link to gripper_link
 T0_EE = simplify(T0_6 * T6_EE)
 ```   
 
-- Also, I did have a hard time figure out the atan2 variables to calculate Theta4, theta5 and theta6. Eventually, I understand the logic behind. However, I still miss the part of handling singularity problem.
+- Also, I did have a hard time figuring out the atan2 variables to calculate Theta4, theta5 and theta6. Eventually, I understand the logic behind. However, I still miss the part of handling singularity problem.
 
-- The time of calculating inverse kinemetics is quite long, I can further investigate to try to remove unnecessary calculation steps.
+- The time of calculating inverse kinemetics is quite long, so I can further investigate to try to remove unnecessary calculation steps.
 
-- I observe that somtimes the path planned to be executed is unnecessarily complicated, for example over 40 eef-poses, and the spherical wrist spins a lot. Maybe I can limit the angle of theta4 to theta6 to reduce the spinning times.
+- I observe that sometimes the path planned is unnecessarily complicated, for example over 40 eef-poses, and the spherical wrist spins a lot. Maybe I can limit the angle of theta4 to theta6 to reduce the spinning times.
 
