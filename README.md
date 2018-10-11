@@ -47,7 +47,7 @@ test_cases = {4:[[[1.99, 1.1324, 1.0011],
 
 #### 2. Using the DH parameter table you derived earlier, create individual transformation matrices about each joint. In addition, also generate a generalized homogeneous transform between base_link and gripper_link using only end-effector(gripper) pose.
 
-**Here is the DB Table filled with joint information from [kr210.urdf.xacro]**(./kuka_arm/urdf/kr210.urdf.xacro)
+**Here is the DB Table filled with joint information from [kr210.urdf.xacro](./kuka_arm/urdf/kr210.urdf.xacro)**
 
 Links | alpha(i-1) | a(i-1) | d(i-1) | theta(i)
 --- | --- | --- | --- | ---
