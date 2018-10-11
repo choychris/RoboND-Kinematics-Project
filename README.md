@@ -19,7 +19,7 @@
 [//]: # (Image References)
 
 [image1]: ./project_images/FK_demo.png
-[image2]: ./project_images/geomatry.png
+[image2]: ./project_images/geometry.png
 [image3]: ./project_images/formula.png
 [image4]: ./project_images/kuka_arm.png
 
@@ -47,7 +47,7 @@ test_cases = {4:[[[1.99, 1.1324, 1.0011],
 
 #### 2. Using the DH parameter table you derived earlier, create individual transformation matrices about each joint. In addition, also generate a generalized homogeneous transform between base_link and gripper_link using only end-effector(gripper) pose.
 
-**Here is the DB Table filled with joint information from [kr210.urdf.xacro]**(../../kuku_arm/urdf/kr210.urdf.xacro)
+**Here is the DB Table filled with joint information from [kr210.urdf.xacro]**(./kuka_arm/urdf/kr210.urdf.xacro)
 
 Links | alpha(i-1) | a(i-1) | d(i-1) | theta(i)
 --- | --- | --- | --- | ---
@@ -184,11 +184,6 @@ def transMat(q, d, a, alpha):
 # Homogeneous transform from base_link to end effector
 T0_EE = simplify(T0_6 * T6_EE)
 ```   
-- In the **inverse kinematics** part, i got the geometry wrong on the first trial, where I didn't substract some of the arm's length.
-
-- I need to pay attention to more paramters and consider more scenarios when doing this part. e.g. 
-* need to subtract *a1* here `diagonal = sqrt(wx**2 + wy**2) - a1`
-* need to subtract *d1* here `length_b = sqrt(diagonal**2 + (wz-d1)**2)`
 
 - Also, I should figure out how to avoid sigularity problem in the IK code.
 
