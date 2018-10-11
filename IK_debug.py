@@ -123,16 +123,32 @@ def test_code(test_case):
             [0, 0, 0, 1]])
         return transform.subs(s)
     T0_1 = transMat(q1, d1, a0, alpha0)
-    T0_2 = simplify(T0_1 * transMat(q2, d2, a1, alpha1))
-    T0_3 = simplify(T0_2 * transMat(q3, d3, a2, alpha2))
-    T0_4 = simplify(T0_3 * transMat(q4, d4, a3, alpha3))
-    T0_5 = simplify(T0_4 * transMat(q5, d5, a4, alpha4))
-    T0_6 = simplify(T0_5 * transMat(q6, d6, a5, alpha5))
-    T0_EE = simplify(T0_6 * transMat(q7, d7, a6, alpha6))
+    # print (T0_1)
+    T1_2 = transMat(q2, d2, a1, alpha1)
+    # print (T1_2)
+    T2_3 = transMat(q3, d3, a2, alpha2)
+    # print (T2_3)
+    T3_4 = transMat(q4, d4, a3, alpha3)
+    # print (T3_4)
+    T4_5 = transMat(q5, d5, a4, alpha4)
+    # print (T4_5)
+    T5_6 = transMat(q6, d6, a5, alpha5)
+    # print (T5_6)
+    T6_EE = transMat(q7, d7, a6, alpha6)
+    # print (T6_EE)
+
+    T0_2 = simplify(T0_1 * T1_2)
+    T0_3 = simplify(T0_2 * T2_3)
+    T0_4 = simplify(T0_3 * T3_4)
+    T0_5 = simplify(T0_4 * T4_5)
+    T0_6 = simplify(T0_5 * T5_6)
+    T0_EE = simplify(T0_6 * T6_EE)
+    # print (T0_EE)
     # Compensate for rotation discrepancy between DH parameters and Gazebo
     # we need to inverse R_crr here since Rgazebo_EE = DH0_EE * R_corr
     # Rrpy(orientation from gazebo) = T0_EE * R_corr
     # T0_EE = Rrpy * R_corr.inv()
+    # print simplify(transMat(q4, d4, a3, alpha3) * transMat(q5, d5, a4, alpha4) * transMat(q6, d6, a5, alpha5))
     R0_6 = simplify(Rot_z(yaw) * Rot_y(pitch) * Rot_x(roll) * R_corr.inv("LU"))
     nx = R0_6[0, 2]
     ny = R0_6[1, 2]
@@ -173,17 +189,21 @@ def test_code(test_case):
     R0_3 = T0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})[0:3, 0:3]
     R0_3 = R0_3.row_join(Matrix([[0], [0], [0]])).col_join(Matrix([[0, 0, 0, 1]]))
     R3_6 = simplify(R0_3.inv('LU') * R0_6)
-    r31 = R3_6[2, 0]
-    r32 = R3_6[2, 1]
-    r33 = R3_6[2, 2]
-    r11 = R3_6[0, 0]
-    r21 = R3_6[1, 0]
-    theta4 = atan2(r32, r33) #R3_4 #roll #Rx
-    theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
-    theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
-    # theta4 = atan2(R3_6[2,2], -R3_6[0,2])
-    # theta5 = atan2(sqrt(R3_6[0,2]**2+R3_6[2,2]**2), R3_6[1,2])
-    # theta6 = atan2(-R3_6[1,1], R3_6[1,0])
+    # r31 = R3_6[2, 0]
+    # r32 = R3_6[2, 1]
+    # r33 = R3_6[2, 2]
+    # r11 = R3_6[0, 0]
+    # r21 = R3_6[1, 0]
+    # theta4 = atan2(r32, r33) #R3_4 #roll #Rx
+    # theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
+    # theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
+    theta5 = atan2(sqrt(R3_6[0,2]**2+R3_6[2,2]**2), R3_6[1,2])
+    if sin(theta5) < 0:
+        theta4 = atan2(-R3_6[2,2], R3_6[0,2])
+        theta6 = atan2(R3_6[1,1], -R3_6[1,0])
+    else:
+        theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+        theta6 = atan2(-R3_6[1,1], R3_6[1,0])
     ###
 
     ## 
@@ -201,8 +221,7 @@ def test_code(test_case):
     T_final = simplify(T0_EE * R_corr)
     base_link = Matrix([[0], [0], [0], [1]])
     EE = simplify(T_final * base_link).evalf(subs={q1: theta1, q2: theta2, q3: theta3, q4: theta4, q5: theta5, q6: theta6})
-    # R_corr = Rot_y(-90*dtr) * Rot_z(90*dtr)
-    # WC = simplify((T0_5 * R_corr) * base_link).evalf(subs={q1: theta1, q2: theta2, q3: theta3, q4: 0, q5: 0})
+    WC = simplify((T0_5) * base_link).evalf(subs={q1: theta1, q2: theta2, q3: theta3, q4: 0, q5: 0})
     # print (WC)
     # print (wx, wy, wz)
     # Extract rotation matrices from the transformation matrices
@@ -211,15 +230,27 @@ def test_code(test_case):
     ########################################################################################
 
     ## For error analysis please set the following variables of your WC location and EE location in the format of [x,y,z]
+    wc_fromDH_table = [WC[0,0], WC[1,0], WC[2,0]]
     your_wc = [wx,wy,wz] # <--- Load your calculated WC values in this array
     your_ee = [EE[0,0],EE[1,0],EE[2,0]] # <--- Load your calculated end effector value from your forward kinematics
     ########################################################################################
 
     ## Error analysis
     print ("\nTotal run time to calculate joint angles from pose is %04.4f seconds" % (time()-start_time))
+    if not(sum(wc_fromDH_table)==3):
+        print (wc_fromDH_table)
+        wc_x_eh = abs(wc_fromDH_table[0]-test_case[1][0])
+        wc_y_eh = abs(wc_fromDH_table[1]-test_case[1][1])
+        wc_z_eh = abs(wc_fromDH_table[2]-test_case[1][2])
+        wc_offseth = sqrt(wc_x_eh**2 + wc_y_eh**2 + wc_z_eh**2)
+        print ("\nWrist error from DH for x position is: %04.8f" % wc_x_eh)
+        print ("Wrist error from DH for y position is: %04.8f" % wc_y_eh)
+        print ("Wrist error from DH for z position is: %04.8f" % wc_z_eh)
+        print ("Overall wrist from DH offset is: %04.8f units" % wc_offseth)
 
     # Find WC error
     if not(sum(your_wc)==3):
+        print (your_wc)
         wc_x_e = abs(your_wc[0]-test_case[1][0])
         wc_y_e = abs(your_wc[1]-test_case[1][1])
         wc_z_e = abs(your_wc[2]-test_case[1][2])
@@ -263,6 +294,6 @@ def test_code(test_case):
 
 if __name__ == "__main__":
     # Change test case number for different scenarios
-    test_case_number = 2
+    test_case_number = 3
 
     test_code(test_cases[test_case_number])

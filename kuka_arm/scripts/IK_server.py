@@ -50,12 +50,26 @@ def handle_calculate_IK(req):
                 [0, 0, 0, 1]])
             return transform.subs(s)
         T0_1 = transMat(q1, d1, a0, alpha0)
-        T0_2 = simplify(T0_1 * transMat(q2, d2, a1, alpha1))
-        T0_3 = simplify(T0_2 * transMat(q3, d3, a2, alpha2))
-        T0_4 = simplify(T0_3 * transMat(q4, d4, a3, alpha3))
-        T0_5 = simplify(T0_4 * transMat(q5, d5, a4, alpha4))
-        T0_6 = simplify(T0_5 * transMat(q6, d6, a5, alpha5))
-        T0_EE = simplify(T0_6 * transMat(q7, d7, a6, alpha6))
+        # print (T0_1)
+        T1_2 = transMat(q2, d2, a1, alpha1)
+        # print (T1_2)
+        T2_3 = transMat(q3, d3, a2, alpha2)
+        # print (T2_3)
+        T3_4 = transMat(q4, d4, a3, alpha3)
+        # print (T3_4)
+        T4_5 = transMat(q5, d5, a4, alpha4)
+        # print (T4_5)
+        T5_6 = transMat(q6, d6, a5, alpha5)
+        # print (T5_6)
+        T6_EE = transMat(q7, d7, a6, alpha6)
+        # print (T6_EE)
+
+        T0_2 = simplify(T0_1 * T1_2)
+        T0_3 = simplify(T0_2 * T2_3)
+        T0_4 = simplify(T0_3 * T3_4)
+        T0_5 = simplify(T0_4 * T4_5)
+        T0_6 = simplify(T0_5 * T5_6)
+        T0_EE = simplify(T0_6 * T6_EE)
     
 	    # Create individual transformation matrices
         def Rot_z(z):
@@ -147,17 +161,21 @@ def handle_calculate_IK(req):
             R0_3 = T0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})[0:3, 0:3]
             R0_3 = R0_3.row_join(Matrix([[0], [0], [0]])).col_join(Matrix([[0, 0, 0, 1]]))
             R3_6 = simplify(R0_3.inv('LU') * R0_6)
-            r31 = R3_6[2, 0]
-            r32 = R3_6[2, 1]
-            r33 = R3_6[2, 2]
-            r11 = R3_6[0, 0]
-            r21 = R3_6[1, 0]
-            theta4 = atan2(r32, r33) #R3_4 #roll #Rx
-            theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
-            theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
-            # theta4 = atan2(R3_6[2,2], -R3_6[0,2])
-            # theta5 = atan2(sqrt(R3_6[0,2]**2+R3_6[2,2]**2), R3_6[1,2])
-            # theta6 = atan2(-R3_6[1,1], R3_6[1,0])
+            # r31 = R3_6[2, 0]
+            # r32 = R3_6[2, 1]
+            # r33 = R3_6[2, 2]
+            # r11 = R3_6[0, 0]
+            # r21 = R3_6[1, 0]
+            # theta4 = atan2(r32, r33) #R3_4 #roll #Rx
+            # theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
+            # theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
+            theta5 = atan2(sqrt(R3_6[0,2]**2+R3_6[2,2]**2), R3_6[1,2])
+            if sin(theta5) < 0:
+                theta4 = atan2(-R3_6[2,2], R3_6[0,2])
+                theta6 = atan2(R3_6[1,1], -R3_6[1,0])
+            else:
+                theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+                theta6 = atan2(-R3_6[1,1], R3_6[1,0])
             ###
 
             # Populate response for the IK request

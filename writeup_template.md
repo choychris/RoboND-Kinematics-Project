@@ -44,7 +44,7 @@ test_cases = {4:[[[1.99, 1.1324, 1.0011],
 
 #### 2. Using the DH parameter table you derived earlier, create individual transformation matrices about each joint. In addition, also generate a generalized homogeneous transform between base_link and gripper_link using only end-effector(gripper) pose.
 
-Here is the DB Table filled with joint information from [kr210.urdf.xacro](./kuku_arm/urdf/kr210.urdf.xacro)
+**Here is the DB Table filled with joint information from [kr210.urdf.xacro]**(../../kuku_arm/urdf/kr210.urdf.xacro)
 
 Links | alpha(i-1) | a(i-1) | d(i-1) | theta(i)
 --- | --- | --- | --- | ---
@@ -68,20 +68,43 @@ For example, a1 is _0.35_, which represents the joint distance between joint_1 a
   </joint>
 ```
 
+**Individual transformation matrices:**
+```
+# T0_1:
+Matrix([[cos(q1), -sin(q1), 0, 0], [sin(q1), cos(q1), 0, 0], [0, 0, 1, 0.75], [0, 0, 0, 1]])
+# T1_2:
+Matrix([[sin(q2), cos(q2), 0, 0.35], [0, 0, 1, 0], [cos(q2), -sin(q2), 0, 0], [0, 0, 0, 1]])
+# T2_3:
+Matrix([[cos(q3), -sin(q3), 0, 1.25], [sin(q3), cos(q3), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+# T3_4:
+Matrix([[cos(q4), -sin(q4), 0, -0.054], [0, 0, 1, 1.5], [-sin(q4), -cos(q4), 0, 0], [0, 0, 0, 1]])
+# T4_5:
+Matrix([[cos(q5), -sin(q5), 0, 0], [0, 0, -1, 0], [sin(q5), cos(q5), 0, 0], [0, 0, 0, 1]])
+# T5_6:
+Matrix([[cos(q6), -sin(q6), 0, 0], [0, 0, 1, 0], [-sin(q6), -cos(q6), 0, 0], [0, 0, 0, 1]])
+# T6_EE:
+Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0.303], [0, 0, 0, 1]])
+```
+
+
+
 #### 3. Decouple Inverse Kinematics problem into Inverse Position Kinematics and inverse Orientation Kinematics; doing so derive the equations to calculate all individual joint angles.
 
-Here is how I find out theta1, theta2 and theta3:
+The following steps show how I find out theta1, theta2 and theta3:
 **calculate WC position:**
 ```
-Rrpy = simplify(Rot_z(yaw) * Rot_y(pitch) * Rot_x(roll) * R_corr)
-nx = Rrpy[0, 2]
-ny = Rrpy[1, 2]
-nz = Rrpy[2, 2]
+# get actual rotation matrix from simulator orientation
+R0_6 = simplify(Rot_z(yaw) * Rot_y(pitch) * Rot_x(roll) * R_corr.inv("LU))
+nx = R0_6[0, 2]
+ny = R0_6[1, 2]
+nz = R0_6[2, 2]
+# calcute WC position from rotation matrix
 wx = px - 0.303 * nx
 wy = py - 0.303 * ny
 wz = pz - 0.303 * nz
 ```
-**Calculate orientation theta1 to 3:**
+
+**Calculate orientation theta 1 to 3:**
 ```
 d4 = 0.96+0.54
 d1 = 0.75
@@ -103,9 +126,31 @@ theta1 = atan2(wy, wx)
 theta2 = pi/2 - angle_a - atan2((wz-d1), diagonal)
 theta3 = pi/2 - angle_b - atan2(a3, d4)
 ```
-**Lastly, use Euler angle composition to find out R3_6 to calculate theta4 to 6**
+**Lastly, use Euler angle composition to find out R3_6 to calculate theta 4 to 6**
+
+* From DH transfromation, we get the `R3_6` rotation matrix:
+
 ```
+Matrix([
+[-sin(q4)*sin(q6) + cos(q4)*cos(q5)*cos(q6), -sin(q4)*cos(q6) - sin(q6)*cos(q4)*cos(q5), -sin(q5)*cos(q4), -0.054],
+[                           sin(q5)*cos(q6),                           -sin(q5)*sin(q6),          cos(q5),    1.5],
+[-sin(q4)*cos(q5)*cos(q6) - sin(q6)*cos(q4),  sin(q4)*sin(q6)*cos(q5) - cos(q4)*cos(q6),  sin(q4)*sin(q5),      0],
+[                                         0,                                          0,                0,      1]])
+```
+
+* Here is the calution to come up with paramters in atan2 formula.
+![alt text][image3]
+
+* Also, we can reuse the tranform `T0_3` to get the rotation `R0_3`. 
+
+```
+R0_3 = T0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})[0:3, 0:3]
+R0_3 = R0_3.row_join(Matrix([[0], [0], [0]])).col_join(Matrix([[0, 0, 0, 1]]))
 R3_6 = simplify(R0_3.inv('LU') * Rrpy)
+
+theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+theta5 = atan2(sqrt(R3_6[0,2]**2+R3_6[2,2]**2), R3_6[1,2])
+theta6 = atan2(-R3_6[1,1], R3_6[1,0])
 ```
 ![alt text][image2]
 
@@ -113,17 +158,14 @@ R3_6 = simplify(R0_3.inv('LU') * Rrpy)
 
 #### 1. Fill in the `IK_server.py` file with properly commented python code for calculating Inverse Kinematics based on previously performed Kinematic Analysis. Your code must guide the robot to successfully complete 8/10 pick and place cycles. Briefly discuss the code you implemented and your results. 
 
+Here is the outcome of implementing Pick and Drop in Gazebo simulator.
+I get **8/10** successful pick and drop.
+
+![alt text][image3]
+
 In the **forward kinematics** part, I get the final transform from base_link to end effector by combine each joint transform using DH Table. 
 This is great that it DH table reduces the number of variables needed to be substited because by chosing the right origin in each joint, many paramters are 0
 ```
-# Create Modified DH parameters
-s ={alpha0: 0,       a0: 0,      d1: 0.33+0.42,  q1: q1,
-    alpha1: -90*dtr, a1: 0.35,   d2: 0,          q2: q2-90*dtr,
-    alpha2: 0,       a2: 1.25,   d3: 0,          q3: q3,
-    alpha3: -90*dtr, a3: -0.054, d4: 0.96+0.54,  q4: q4,
-    alpha4: 90*dtr,  a4: 0,      d5: 0,          q5: q5,
-    alpha5: -90*dtr, a5: 0,      d6: 0,          q6: q6,
-    alpha6: 0,       a6: 0,      d7: 0.193+0.11, q7: 0}
 # Define Modified DH Transformation matrix
 def transMat(q, d, a, alpha):
     transform = Matrix([
@@ -132,13 +174,6 @@ def transMat(q, d, a, alpha):
         [sin(q)*sin(alpha), cos(q)*sin(alpha), cos(alpha), cos(alpha)*d],
         [0, 0, 0, 1]])
     return transform.subs(s)
-T0_1 = transMat(q1, d1, a0, alpha0)
-T0_2 = simplify(T0_1 * transMat(q2, d2, a1, alpha1))
-T0_3 = simplify(T0_2 * transMat(q3, d3, a2, alpha2))
-T0_4 = simplify(T0_3 * transMat(q4, d4, a3, alpha3))
-T0_5 = simplify(T0_4 * transMat(q5, d5, a4, alpha4))
-T0_6 = simplify(T0_5 * transMat(q6, d6, a5, alpha5))
-T0_EE = simplify(T0_6 * transMat(q7, d7, a6, alpha6))
 ```   
 In the **inverse kinematics** part, i got the geometry wrong on the first trial, where I didn't substract some of the arm's length.
 
@@ -146,23 +181,7 @@ I need to pay attention to more paramters and consider more scenarios when doing
 * need to subtract *a1* here `diagonal = sqrt(wx**2 + wy**2) - a1`
 * need to subtract *d1* here `length_b = sqrt(diagonal**2 + (wz-d1)**2)`
 
-Finally getting theta4, theta5 and theta6. In this part, we can reuse the tranform `T0_3` to get the rotation `R0_3`. After that, *Euler angles* and *atan2* lets me solve the problem. 
-```
-R0_3 = T0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})[0:3, 0:3]
-R0_3 = R0_3.row_join(Matrix([[0], [0], [0]])).col_join(Matrix([[0, 0, 0, 1]]))
-R3_6 = simplify(R0_3.inv('LU') * Rrpy)
-#print (R4_6)
-r31 = R3_6[2, 0]
-r32 = R3_6[2, 1]
-r33 = R3_6[2, 2]
-r11 = R3_6[0, 0]
-r21 = R3_6[1, 0]
-theta4 = atan2(r32, r33) #R3_4 #roll #Rx
-theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
-theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
-```
+Also, I should figure out how to avoid sigularity problem in the IK code.
 
-And just for fun, another example image:
-![alt text][image3]
-
+I observe that somtimes the path planed to be executed is unnecessarily complicated, for example over 40 eef-poses. 
 
