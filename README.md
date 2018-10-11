@@ -1,5 +1,7 @@
 ## Project: Kinematics Pick & Place
-### This Readme contains desciption of works that I have done to complete KUKA210 Pick and Drop Project
+### This repositery is forked from [Udacity Official RoboND-Kinematics-Project](https://github.com/udacity/RoboND-Kinematics-Project).
+#### I have completed the [IK_server.py](./kuka_arm/scripts/IK_server.py) and [IK_debug.py](./IK_debug.py).
+#### This document contains the desciption of works that I have done to complete KUKA210 Pick and Place Project. For project introduction please go to [this udacity document](./Project_Intro.md)
 ---
 
 
@@ -69,7 +71,7 @@ For example, a1 is _0.35_, which represents the joint distance between joint_1 a
   </joint>
 ```
 
-**Individual transformation matrices:**
+Individual transformation matrices:
 ```
 # T0_1:
 Matrix([[cos(q1), -sin(q1), 0, 0], [sin(q1), cos(q1), 0, 0], [0, 0, 1, 0.75], [0, 0, 0, 1]])
@@ -92,7 +94,8 @@ Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0.303], [0, 0, 0, 1]])
 #### 3. Decouple Inverse Kinematics problem into Inverse Position Kinematics and inverse Orientation Kinematics; doing so derive the equations to calculate all individual joint angles.
 
 The following steps show how I find out theta1, theta2 and theta3:
-**calculate WC position:**
+
+1. calculate WC position:
 ```
 # get actual rotation matrix from simulator orientation
 R0_6 = simplify(Rot_z(yaw) * Rot_y(pitch) * Rot_x(roll) * R_corr.inv("LU))
@@ -105,7 +108,7 @@ wy = py - 0.303 * ny
 wz = pz - 0.303 * nz
 ```
 
-**Calculate orientation theta 1 to 3:**
+2. Calculate orientation theta 1 to 3:
 
 ![alt text][image2]
 
@@ -130,7 +133,7 @@ theta1 = atan2(wy, wx)
 theta2 = pi/2 - angle_a - atan2((wz-d1), diagonal)
 theta3 = pi/2 - angle_b - atan2(a3, d4)
 ```
-**Lastly, use Euler angle composition to find out R3_6 to calculate theta 4 to 6**
+3. Lastly, use Euler angle composition to find out R3_6 to calculate theta 4 to 6:
 
 * From DH transfromation, we get the `R3_6` rotation matrix:
 
@@ -166,7 +169,7 @@ I get **8/10** successful pick and drop.
 
 ![alt text][image4]
 
-In the **forward kinematics** part, I get the final transform from base_link to end effector by combine each joint transform using DH Table. 
+- In the **forward kinematics** part, I get the final transform from base_link to end effector by combine each joint transform using DH Table. 
 This is great that it DH table reduces the number of variables needed to be substited because by chosing the right origin in each joint, many paramters are 0
 ```
 # Define Modified DH Transformation matrix
@@ -181,13 +184,13 @@ def transMat(q, d, a, alpha):
 # Homogeneous transform from base_link to end effector
 T0_EE = simplify(T0_6 * T6_EE)
 ```   
-In the **inverse kinematics** part, i got the geometry wrong on the first trial, where I didn't substract some of the arm's length.
+- In the **inverse kinematics** part, i got the geometry wrong on the first trial, where I didn't substract some of the arm's length.
 
-I need to pay attention to more paramters and consider more scenarios when doing this part. e.g. 
+- I need to pay attention to more paramters and consider more scenarios when doing this part. e.g. 
 * need to subtract *a1* here `diagonal = sqrt(wx**2 + wy**2) - a1`
 * need to subtract *d1* here `length_b = sqrt(diagonal**2 + (wz-d1)**2)`
 
-Also, I should figure out how to avoid sigularity problem in the IK code.
+- Also, I should figure out how to avoid sigularity problem in the IK code.
 
-I observe that somtimes the path planed to be executed is unnecessarily complicated, for example over 40 eef-poses. 
+- I observe that somtimes the path planed to be executed is unnecessarily complicated, for example over 40 eef-poses. 
 
