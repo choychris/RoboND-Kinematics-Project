@@ -164,6 +164,12 @@ def handle_calculate_IK(req):
             R0_3 = R0_3.row_join(Matrix([[0], [0], [0]])).col_join(Matrix([[0, 0, 0, 1]]))
             R3_6 = simplify(R0_3.inv('LU') * R0_6)
 
+            # R$_6 matrix in Math Notation:
+            # Matrix([
+            # [-sin(q4)*sin(q6) + cos(q4)*cos(q5)*cos(q6), -sin(q4)*cos(q6) - sin(q6)*cos(q4)*cos(q5), -sin(q5)*cos(q4)],
+            # [                           sin(q5)*cos(q6),                           -sin(q5)*sin(q6),          cos(q5)],
+            # [-sin(q4)*cos(q5)*cos(q6) - sin(q6)*cos(q4),  sin(q4)*sin(q6)*cos(q5) - cos(q4)*cos(q6),  sin(q4)*sin(q5)]])
+            
             # theta 4 to 6:
             # (R3_6[0,2])**2 + (R3_6[2,2])**2 = (-sin(q5)*cos(q4))**2 + (-sin(q5)*sin(q4))**2
             #                                 = sin(q5)**2 * (sin(q4)**2 + cos(q4)**2)
