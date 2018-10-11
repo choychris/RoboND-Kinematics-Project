@@ -131,44 +131,43 @@ def handle_calculate_IK(req):
             wz = pz - 0.303 * nz
 
             # Calculate joint angles using Geometric IK method
-            theta1 = atan2(wy, wx)
+            
+            # fixed DH paramter value
             d4 = 0.96+0.54
             d1 = 0.75
             a3 = 0.054
             a2 = 1.25
             a1 = 0.35
-            diagonal = sqrt(wx**2 + wy**2) - a1 #line projected from straight distance b/w O2 & WC to plane x y 
+
+            #line projected from straight distance b/w O2 & WC to plane x y 
+            diagonal_xy = sqrt(wx**2 + wy**2) - a1 
             length_a = sqrt(a3**2 + d4**2)
             # here we need to subtract the length of a1 and d1 to obtain the actual length starting from O2 
             length_b = sqrt(diagonal**2 + (wz-d1)**2) # this is where I did wrong
             length_c = a2
+
             # Cosine Laws formula:
             # length_a**2 = length_b**2 + length_c**2 - 2*length_b*length_c*cos(angle_a)
-            # inverse to find angle_a
+            # inverse to find angle_a, angle_b and angle_c:
             angle_a = acos((length_b**2+length_c**2-length_a**2)/(2*length_b*length_c))
             angle_b = acos((length_a**2+length_c**2-length_b**2)/(2*length_a*length_c))
             angle_c = acos((length_a**2+length_b**2-length_c**2)/(2*length_a*length_b))
-            # print (angle_a, angle_b, angle_c)
-            # print (angle_a+angle_b+angle_c)
-            theta2 = pi/2 - angle_a - atan2((wz-d1), diagonal)
+
+            # theta 1 to 3:
+            theta1 = atan2(wy, wx)
+            theta2 = pi/2 - angle_a - atan2((wz-d1), diagonal_xy)
             theta3 = pi/2 - angle_b - atan2(a3, d4)
 
-            # Calculate R4_6 
-            # R0_3 = T0_3.evalf(subs={q1: theta1, q2: theta2, q3: theta3})
-            # R0_3 = R0_3.col_del(3).row_del(3)
-            # R0_3 = R0_3.col_insert(3, Matrix([0, 0, 0]))
-            # R0_3 = R0_3.row_insert(3, Matrix([[0, 0, 0, 1]]))
+            # Calculate R3_6:
+            # R0_6 = R0_1 * R1_2 * R2_3 * R3_4 * R4_5 * R5_6
             R0_3 = T0_3.evalf(subs={q1:theta1, q2:theta2, q3:theta3})[0:3, 0:3]
             R0_3 = R0_3.row_join(Matrix([[0], [0], [0]])).col_join(Matrix([[0, 0, 0, 1]]))
             R3_6 = simplify(R0_3.inv('LU') * R0_6)
-            # r31 = R3_6[2, 0]
-            # r32 = R3_6[2, 1]
-            # r33 = R3_6[2, 2]
-            # r11 = R3_6[0, 0]
-            # r21 = R3_6[1, 0]
-            # theta4 = atan2(r32, r33) #R3_4 #roll #Rx
-            # theta5 = atan2(-r31, sqrt(r11**2+r21**2)) #R4_5 #pitch #Ry
-            # theta6 = atan2(r21, r11) #R5_6 #yaw #Rz
+
+            # theta 4 to 6:
+            # (R3_6[0,2])**2 + (R3_6[2,2])**2 = (-sin(q5)*cos(q4))**2 + (-sin(q5)*sin(q4))**2
+            #                                 = sin(q5)**2 * (sin(q4)**2 + cos(q4)**2)
+            # sqrt(R3_6[0,2]**2+R3_6[2,2]**2) = sin(q5)                                   
             theta5 = atan2(sqrt(R3_6[0,2]**2+R3_6[2,2]**2), R3_6[1,2])
             if sin(theta5) < 0:
                 theta4 = atan2(-R3_6[2,2], R3_6[0,2])
