@@ -184,11 +184,6 @@ def transMat(q, d, a, alpha):
 # Homogeneous transform from base_link to end effector
 T0_EE = simplify(T0_6 * T6_EE)
 ```   
-- In the **inverse kinematics** part, i got the geometry wrong on the first trial, where I didn't substract some of the arm's length.
-
-- I need to pay attention to more paramters and consider more scenarios when doing this part. e.g. 
-* need to subtract *a1* here `diagonal = sqrt(wx**2 + wy**2) - a1`
-* need to subtract *d1* here `length_b = sqrt(diagonal**2 + (wz-d1)**2)`
 
 - Also, I should figure out how to avoid sigularity problem in the IK code.
 
